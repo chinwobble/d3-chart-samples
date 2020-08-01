@@ -27,93 +27,69 @@ const getOppositeDirection = (direction: MoveDirection) => {
 type Block = {
   x: number;
   y: number;
-  direction: MoveDirection;
+  nextMove: { x: number; y: number };
   isMain: boolean;
-};
-
-const moveTopRight = (b: Block, spawn: boolean): void => {
-  if (spawn) {
-    blocks.push({ ...b, direction: getOppositeDirection(b.direction), isMain: false });
-  }
-
-  b.direction = MoveDirection.TopRight;
-  b.x++;
-  b.y--;
-};
-const moveTopLeft = (b: Block, spawn: boolean): void => {
-  if (spawn) {
-    blocks.push({ ...b, direction: getOppositeDirection(b.direction), isMain: false });
-  }
-  b.direction = MoveDirection.TopLeft;
-  b.x--;
-  b.y--;
-};
-const moveBotLeft = (b: Block, spawn: boolean): void => {
-  if (spawn) {
-    blocks.push({ ...b, direction: getOppositeDirection(b.direction), isMain: false });
-  }
-  b.direction = MoveDirection.BottomLeft;
-  b.x--;
-  b.y++;
-};
-const moveBotRight = (b: Block, spawn: boolean): void => {
-  if (spawn) {
-    blocks.push({ ...b, direction: getOppositeDirection(b.direction), isMain: false });
-  }
-  b.direction = MoveDirection.BottomRight;
-  b.y++;
-  b.x++;
+  startPosition: { x: number; y: number };
+  hasMovedSinceSpawn: boolean;
 };
 
 const blocks: Block[] = [
   {
-    direction: MoveDirection.BottomRight,
+    nextMove: { x: 1, y: 1 },
     isMain: true,
     x: 0,
     y: 0,
+    startPosition: { x: 0, y: 0 },
+    hasMovedSinceSpawn: false,
   },
 ];
 
-const calculateNewBlockPositions = (gridSpec: GridSpecification) => {
-  const maxX = gridSpec.width / gridSpec.cellSize;
-  const maxY = gridSpec.height / gridSpec.cellSize;
-  for (const block of blocks) {
-    const canMoveBotRight = block.x + 1 < maxX && block.y + 1 < maxY;
-    const canMoveBotLeft = block.x - 1 >= 0 && block.y + 1 < maxY;
-    const canMoveTopLeft = block.x - 1 >= 0 && block.y - 1 >= 0;
-    const canMoveTopRight = block.x + 1 < maxX && block.y - 1 >= 0;
+function moveToNewPosition(b: Block) {
+  b.hasMovedSinceSpawn = true;
+  b.x += b.nextMove.x;
+  b.y += b.nextMove.y;
+}
+function flipYDirection(block: Block) {
+  block.nextMove.y *= -1;
+  return block;
+}
+function flipXDirection(block: Block) {
+  block.nextMove.x *= -1;
+  return block;
+}
 
-    if (block.direction === MoveDirection.BottomRight && canMoveBotRight)
-      moveBotRight(block, false);
-    else if (block.direction === MoveDirection.BottomRight && canMoveTopRight)
-      moveTopRight(block, block.isMain);
-    else if (block.direction === MoveDirection.BottomRight && canMoveBotLeft)
-      moveBotLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.BottomRight && canMoveTopLeft)
-      moveTopLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.TopRight && canMoveTopRight)
-      moveTopRight(block, false);
-    else if (block.direction === MoveDirection.TopRight && canMoveBotRight)
-      moveBotRight(block, block.isMain);
-    else if (block.direction === MoveDirection.TopRight && canMoveTopLeft)
-      moveTopLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.TopRight && canMoveBotLeft)
-      moveBotLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.BottomLeft && canMoveBotLeft)
-      moveBotLeft(block, false);
-    else if (block.direction === MoveDirection.BottomLeft && canMoveBotRight)
-      moveBotRight(block, block.isMain);
-    else if (block.direction === MoveDirection.BottomLeft && canMoveTopLeft)
-      moveTopLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.BottomLeft && canMoveTopRight)
-      moveTopRight(block, block.isMain);
-    else if (block.direction === MoveDirection.TopLeft && canMoveTopLeft) moveTopLeft(block, false);
-    else if (block.direction === MoveDirection.TopLeft && canMoveBotLeft)
-      moveBotLeft(block, block.isMain);
-    else if (block.direction === MoveDirection.TopLeft && canMoveTopRight)
-      moveTopRight(block, block.isMain);
-    else if (block.direction === MoveDirection.TopLeft && canMoveBotRight)
-      moveBotRight(block, block.isMain);
+function spawnNewBlock(block: Block) {
+  return {
+    ...block,
+    isMain: false,
+    hasMovedSinceSpawn: false,
+    nextMove: { ...block.nextMove },
+    startPosition: { x: block.x, y: block.y },
+  };
+}
+
+const calculateNewBlockPositions = (gridSpec: GridSpecification) => {
+  const maxX = gridSpec.width / gridSpec.cellSize - 1;
+  const maxY = gridSpec.height / gridSpec.cellSize - 1;
+  for (const block of blocks) {
+    const atTopOrBottomEdge = block.hasMovedSinceSpawn && (block.y === 0 || block.y === maxY);
+    const atLeftOrRightEdge = block.hasMovedSinceSpawn && (block.x === 0 || block.x === maxX);
+
+    if (atTopOrBottomEdge && atLeftOrRightEdge) {
+      flipXDirection(block);
+      flipYDirection(block);
+      block.isMain && blocks.push(spawnNewBlock(block));
+    } else if (atTopOrBottomEdge) {
+      flipYDirection(block);
+      block.isMain && blocks.push(flipXDirection(spawnNewBlock(block)));
+    } else if (atLeftOrRightEdge) {
+      flipXDirection(block);
+      block.isMain && blocks.push(flipYDirection(spawnNewBlock(block)));
+    } else {
+      // todo check if out of bounds
+    }
+
+    moveToNewPosition(block);
   }
 };
 
@@ -133,34 +109,21 @@ export function updatePosition(
   gridSpec: GridSpecification
 ): void {
   calculateNewBlockPositions(gridSpec);
-  const blocksElem = grid
-    .selectAll<SVGRectElement, Block>('.grid__block')
-    .data(blocks, (a, b, c) => 'a');
+  const blocksElem = grid.selectAll<SVGRectElement, Block>('.grid__block').data(blocks);
 
   blocksElem
     .enter()
-    .append('rect')
+    .append<SVGRectElement>('rect')
     .attr('class', (d) =>
       d.isMain ? 'grid__block grid__block--main' : 'grid__block grid__block--secondary'
     )
     .transition()
     .duration(gridSpec.updateIntervalInMS)
     .ease(easeLinear)
-    .on('start', function (d, i) {
-      // animate from the correct direction. This doesn't strictly handle all cases
+    .on('start', function (block, i) {
       select(this)
-        ?.attr(
-          'x',
-          d.direction === MoveDirection.TopLeft || d.direction === MoveDirection.BottomLeft
-            ? d.x * gridSpec.cellSize + gridSpec.cellSize
-            : d.x * gridSpec.cellSize - gridSpec.cellSize
-        )
-        .attr(
-          'y',
-          d.direction === MoveDirection.TopLeft || d.direction === MoveDirection.TopRight
-            ? gridSpec.height
-            : 0
-        )
+        ?.attr('x', block.startPosition.x * gridSpec.cellSize)
+        .attr('y', block.startPosition.y * gridSpec.cellSize)
         .attr('width', gridSpec.cellSize)
         .attr('height', gridSpec.cellSize);
     })
