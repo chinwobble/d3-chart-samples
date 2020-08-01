@@ -37,7 +37,6 @@ export class D3Gantt {
     this._height = _taskTypes.length * 25;
     this.initTimeDomain();
     this.initAxis();
-    console.log(this._width);
 
     const svg = d3
       .selectAll('svg.chart')
@@ -55,18 +54,18 @@ export class D3Gantt {
       .attr('class', 'gantt-chart')
       .attr('width', this._width + this._margin.left + this._margin.right)
       .attr('height', this._height + this._margin.top + this._margin.bottom)
-      .attr('transform', 'translate(' + this._margin.left + ' ' + this._margin.top + ')');
+      .attr('transform', `translate(${this._margin.left} ${this._margin.top})`);
 
     const workLogGroups = svg
-      .selectAll<SVGGElement, WorkLog>('.chart')
+      .selectAll<SVGSVGElement, WorkLog>('.chart')
       .data<WorkLog>(
         this.workLogs,
         (worklog, index, groups) => worklog.startTime + worklog.Name + worklog.endTime
       )
       .enter()
-      .append('g')
+      .append<SVGGElement>('g')
       .attr('class', 'work-log-group')
-      .attr('transform', (d) => 'translate(' + this._x(d.startTime) + ' ' + this._y(d.type) + ')');
+      .attr('transform', (d) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`);
     const workLogRect = workLogGroups
       .append('rect')
       .attr('rx', 5)
@@ -103,7 +102,7 @@ export class D3Gantt {
             .attr(
               'transform',
               (da: WorkLog) =>
-                'translate(' + self._x((d.startTime = newStartTime)) + ' ' + self._y(da.type) + ')'
+                `translate(${self._x((d.startTime = newStartTime))} ${self._y(da.type)})`
             )
             .select('.work-log-rect')
             .attr('width', self._x(d.endTime) - self._x(d.startTime));
@@ -159,10 +158,7 @@ export class D3Gantt {
           d.startTime = newStart;
           d.endTime = newEnd;
           const currentPos = getTransformation(this.getAttribute('transform')!);
-          d3.select(this).attr(
-            'transform',
-            'translate(' + newPosX + ' ' + currentPos.translateY + ')'
-          );
+          d3.select(this).attr('transform', `translate(${newPosX} ${currentPos.translateY})`);
         }
       })
     );
@@ -176,7 +172,7 @@ export class D3Gantt {
     svg
       .append('g')
       .attr('class', 'x axis')
-      .attr('transform', 'translate(0 ' + this._height + ')')
+      .attr('transform', `translate(0 ${this._height})`)
       .transition()
       .call(this._xAxis);
 
@@ -265,10 +261,7 @@ export class D3Gantt {
     const workLogGroups = d3
       .selectAll<SVGGElement, WorkLog>('g.work-log-group')
       .transition()
-      .attr(
-        'transform',
-        (d: WorkLog) => 'translate(' + this._x(d.startTime) + ' ' + this._y(d.type) + ')'
-      );
+      .attr('transform', (d: WorkLog) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`);
 
     this._dragBarLeft
       .style('visibility', (d: WorkLog) =>
