@@ -3,8 +3,14 @@ import './context-menu.scss';
 
 interface ContextMenu {
   (x: number, y: number, selection: any): void;
-  items(items?: string[]): string[] | this;
+  items: FluentProperty<this, string[]>;
   remove(): void;
+}
+
+interface FluentProperty<C, V> {
+  (): V;
+  (val: V): C;
+  (val?: V): C | V;
 }
 
 export function contextMenu(): ContextMenu {

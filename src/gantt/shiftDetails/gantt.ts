@@ -37,6 +37,7 @@ export class D3Gantt {
     this._height = _taskTypes.length * 25;
     this.initTimeDomain();
     this.initAxis();
+    console.log(this._width);
 
     const svg = d3
       .selectAll('svg.chart')
@@ -48,8 +49,8 @@ export class D3Gantt {
           ' ' +
           (this._height + this._margin.top + this._margin.bottom)
       )
-      // .attr("width", this._width + this._margin.left + this._margin.right)
-      // .attr("height", this._height + this._margin.top + this._margin.bottom)
+      .attr('width', this._width + this._margin.left + this._margin.right)
+      .attr('height', this._height + this._margin.top + this._margin.bottom)
       .append('g')
       .attr('class', 'gantt-chart')
       .attr('width', this._width + this._margin.left + this._margin.right)
@@ -169,7 +170,7 @@ export class D3Gantt {
     d3.selectAll<SVGGElement, WorkLog>('.work-log-group').on('contextmenu', function () {
       d3.event.preventDefault();
       const [x, y] = d3.mouse(this.parentElement!);
-      (<any>menu)(x, y, this.parentElement);
+      menu(x, y, this.parentElement);
     });
 
     svg
@@ -198,7 +199,9 @@ export class D3Gantt {
     );
   }
 
-  private setupDragBar = (selection: d3.Selection<SVGRectElement, WorkLog, SVGGElement, unknown>) => {
+  private setupDragBar = (
+    selection: d3.Selection<SVGRectElement, WorkLog, SVGGElement, unknown>
+  ) => {
     selection
       .attr('rx', 5)
       .attr('ry', 5)

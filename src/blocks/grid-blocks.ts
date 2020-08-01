@@ -4,26 +4,6 @@ import { Transition } from 'd3-transition';
 import { easeLinear } from 'd3-ease';
 import 'd3-transition';
 
-enum MoveDirection {
-  TopLeft = 0,
-  TopRight = 1,
-  BottomRight = 2,
-  BottomLeft = 3,
-}
-
-const getOppositeDirection = (direction: MoveDirection) => {
-  switch (direction) {
-    case MoveDirection.TopRight:
-      return MoveDirection.BottomLeft;
-    case MoveDirection.BottomRight:
-      return MoveDirection.TopLeft;
-    case MoveDirection.BottomLeft:
-      return MoveDirection.TopRight;
-    case MoveDirection.TopLeft:
-      return MoveDirection.BottomRight;
-  }
-};
-
 type Block = {
   x: number;
   y: number;
@@ -49,6 +29,7 @@ function moveToNewPosition(b: Block) {
   b.x += b.nextMove.x;
   b.y += b.nextMove.y;
 }
+
 function flipYDirection(block: Block) {
   block.nextMove.y *= -1;
   return block;
