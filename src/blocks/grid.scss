@@ -1,0 +1,23 @@
+.grid {
+  padding: 5px;
+  margin: 0px;
+
+  svg {
+    border: 1px solid gray;
+  }
+
+  &__row-line,
+  &__column-line {
+    opacity: 0.5;
+    stroke: gray;
+    stroke-width: 1;
+  }
+
+  &__block--secondary {
+    fill: red;
+  }
+
+  &__block--main {
+    fill: blue;
+  }
+}

@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css?family=Lato&display=swap');
+@import 'grid';
+
+body {
+  font: 20px 'Lato', sans-serif;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  background-color: black;
+  margin: 0;
+}

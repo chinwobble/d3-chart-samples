@@ -1,0 +1,16 @@
+gantt-context-menu {
+  &__text {
+    fill: steelblue;
+    font-size: 13;
+  }
+
+  &__rect--mouseover {
+    fill: rgb(200, 200, 200);
+  }
+
+  &__rect--mouseout {
+    fill: rgb(244, 244, 244);
+    stroke: white;
+    stroke-width: 1px;
+  }
+}
