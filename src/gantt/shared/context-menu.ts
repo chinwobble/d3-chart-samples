@@ -1,4 +1,5 @@
-import * as d3 from 'd3';
+import { select, selectAll } from 'd3-selection';
+import { max } from 'd3-array';
 import './context-menu.scss';
 
 interface ContextMenu {
@@ -26,8 +27,7 @@ export function contextMenu(): ContextMenu {
 
     // Draw the menu
 
-    const menuContainer = d3
-      .select(selection)
+    const menuContainer = select(selection)
       .append('g')
       .attr('class', 'context-menu')
       .selectAll('g')
@@ -37,13 +37,13 @@ export function contextMenu(): ContextMenu {
       .attr('class', 'menu-entry')
       .style('cursor', 'pointer')
       .on('mouseover', function () {
-        d3.select(this).select('rect').classed('gantt-context-menu__rect--mouseover', true);
+        select(this).select('rect').classed('gantt-context-menu__rect--mouseover', true);
       })
       .on('mouseout', function () {
-        d3.select(this).select('rect').classed('gantt-context-menu__rect--mouseout', true);
+        select(this).select('rect').classed('gantt-context-menu__rect--mouseout', true);
       });
 
-    d3.selectAll('.menu-entry')
+    selectAll('.menu-entry')
       .append('rect')
       .attr('x', x)
       .attr('y', (d, i) => y + i * height)
@@ -51,7 +51,7 @@ export function contextMenu(): ContextMenu {
       .attr('height', height)
       .classed('gantt-context-menu__rect--mouseover', true);
 
-    d3.selectAll<SVGRectElement, string>('.menu-entry')
+    selectAll<SVGRectElement, string>('.menu-entry')
       .append<SVGTextElement>('text')
       .text((d: string) => d)
       .attr('x', x)
@@ -61,11 +61,11 @@ export function contextMenu(): ContextMenu {
       .classed('gantt-context-menu__text', true);
 
     // Other interactions
-    d3.select('body').on('click', () => d3.select('.context-menu').remove());
+    select('body').on('click', () => select('.context-menu').remove());
   } as any;
 
   menu.remove = () => {
-    d3.selectAll('.context-menu').remove();
+    selectAll('.context-menu').remove();
   };
 
   menu.items = function (_: string[]) {
@@ -77,7 +77,7 @@ export function contextMenu(): ContextMenu {
     if (!rescale) {
       return;
     }
-    d3.selectAll('svg')
+    selectAll('svg')
       .selectAll('tmp')
       .data(items)
       .enter()
@@ -88,18 +88,17 @@ export function contextMenu(): ContextMenu {
       .attr('y', -1000)
       .attr('class', 'tmp');
 
-    const z = d3
-      .selectAll('.tmp')
+    const z = selectAll('.tmp')
       .nodes()
       .map((x: any) => x.getBBox());
 
-    width = d3.max(z.map((x) => x.width));
+    width = max(z.map((x) => x.width));
     margin = margin * width;
     width = width + 2 * margin;
-    height = d3.max(z.map((x) => x.height + margin / 2));
+    height = max(z.map((x) => x.height + margin / 2));
 
     // cleanup
-    d3.selectAll('.tmp').remove();
+    selectAll('.tmp').remove();
     rescale = false;
   }
 

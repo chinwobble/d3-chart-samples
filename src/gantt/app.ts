@@ -20,4 +20,4 @@ const worklogs: WorkLog[] = [
   },
 ];
 
-const gantt = new D3Gantt(worklogs, ['type1', 'type2']).redraw();
+const gantt = new D3Gantt(worklogs).redraw();

@@ -1,9 +1,13 @@
-import * as d3 from 'd3';
-import { Selection } from 'd3-selection';
+import { scaleTime, scaleBand } from 'd3-scale';
+import { axisBottom, axisLeft } from 'd3-axis';
+import { timeDay, timeHour } from 'd3-time';
+import { timeFormat } from 'd3-time-format';
+import { zoom } from 'd3-zoom';
+import { Selection, select, selectAll, mouse, event } from 'd3-selection';
+import { drag } from 'd3-drag';
 import { WorkLog } from './WorkLog';
 import { getTransformation } from '../shared/translateHelper';
 import { contextMenu } from '../shared/context-menu';
-import { BaseType } from 'd3';
 
 export class D3Gantt {
   private static FIT_TIME_DOMAIN_MODE = 'fit';
@@ -13,12 +17,12 @@ export class D3Gantt {
     top: 20,
     right: 40,
     bottom: 25,
-    left: 150,
+    left: 100,
   };
 
   private _dragBarW = 10;
-  private _timeDomainStart = d3.timeDay.offset(new Date(), -3);
-  private _timeDomainEnd = d3.timeHour.offset(new Date(), +3);
+  private _timeDomainStart = timeDay.offset(new Date(), -3);
+  private _timeDomainEnd = timeHour.offset(new Date(), +3);
   private _timeDomainMode = D3Gantt.FIT_TIME_DOMAIN_MODE; // fixed or fit
   private _taskStatus = [];
   private _height: number;
@@ -30,16 +34,13 @@ export class D3Gantt {
 
   private _tickFormat = '%H:%M';
 
-  private _dragBarLeft: Selection<SVGRectElement, WorkLog, SVGGElement, unknown>;
-  private _dragBarRight: Selection<SVGRectElement, WorkLog, SVGGElement, unknown>;
-
-  constructor(private workLogs: WorkLog[], private _taskTypes: string[]) {
-    this._height = _taskTypes.length * 25;
+  constructor(private workLogs: WorkLog[]) {
+    const taskTypes = Array.from(new Set(workLogs.map((x) => x.type)));
+    this._height = taskTypes.length * 25;
     this.initTimeDomain();
-    this.initAxis();
+    this.initAxis(taskTypes);
 
-    const svg = d3
-      .selectAll('svg.chart')
+    const svg = selectAll('svg.chart')
       .attr('class', 'chart svg-chart')
       .attr(
         'viewbox',
@@ -49,55 +50,110 @@ export class D3Gantt {
           (this._height + this._margin.top + this._margin.bottom)
       )
       .attr('width', this._width + this._margin.left + this._margin.right)
-      .attr('height', this._height + this._margin.top + this._margin.bottom)
-      .append('g')
+      .attr('height', this._height + this._margin.top + this._margin.bottom);
+
+    const container = svg
+      .append<SVGGElement>('g')
       .attr('class', 'gantt-chart')
-      .attr('width', this._width + this._margin.left + this._margin.right)
-      .attr('height', this._height + this._margin.top + this._margin.bottom)
       .attr('transform', `translate(${this._margin.left} ${this._margin.top})`);
 
-    const workLogGroups = svg
-      .selectAll<SVGSVGElement, WorkLog>('.chart')
+    this.drawBars();
+    this.drawDragBars(container.selectAll('.work-log-group'));
+
+    container
+      .append('g')
+      .attr('class', 'x-axis')
+      .attr('transform', `translate(0 ${this._height})`)
+      .transition()
+      .call(this._xAxis);
+
+    container.append('g').attr('class', 'y-axis').transition().call(this._yAxis);
+
+    select('.chart').call(
+      // @ts-ignore
+      zoom()
+        .filter(() => event.type === 'wheel')
+        .on('zoom', () => {
+          const wheelMove = event.sourceEvent.wheelDelta / 60;
+          this._timeDomainMode = 'fixed';
+          const currentStart = this._timeDomainStart;
+          const currentEnd = this._timeDomainEnd;
+          this._timeDomainStart = timeHour.floor(timeHour.offset(currentStart, wheelMove));
+          this._timeDomainEnd = timeHour.ceil(timeHour.offset(currentEnd, wheelMove));
+          this.redraw();
+        })
+    );
+  }
+
+  private drawBars() {
+    const workLogGroups = select('.gantt-chart')
+      .selectAll<SVGGElement, WorkLog>('.work-log-group')
       .data<WorkLog>(
         this.workLogs,
-        (worklog, index, groups) => worklog.startTime + worklog.Name + worklog.endTime
+        (worklog, i, groups) => worklog.startTime + worklog.Name + worklog.endTime
       )
-      .enter()
-      .append<SVGGElement>('g')
-      .attr('class', 'work-log-group')
-      .attr('transform', (d) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`);
-    const workLogRect = workLogGroups
-      .append('rect')
+      .join(
+        (enter) =>
+          enter
+            .append<SVGGElement>('g')
+            .attr('class', 'work-log-group')
+            .attr('transform', (d) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`)
+            .append<SVGRectElement>('rect'),
+        (update) =>
+          update
+            .attr('transform', (d) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`)
+            .selectAll('.work-log-rect'),
+        (exit) => exit.remove()
+      );
+
+    workLogGroups
       .attr('rx', 5)
       .attr('ry', 5)
       .attr('class', 'work-log-rect')
+      .transition()
       .attr('height', this._y.bandwidth())
       .attr('width', (d) => this._x(d.endTime) - this._x(d.startTime))
       .style('fill', (d) => d.color);
 
-    this._dragBarLeft = workLogGroups
-      .append<SVGRectElement>('rect')
+    const menu = contextMenu().items(['item1', 'item2']);
+    workLogGroups.on('contextmenu', function () {
+      event.preventDefault();
+      const [x, y] = mouse(this.parentElement!);
+      menu(x, y, this.parentElement);
+    });
+  }
+
+  private drawDragBars(container: Selection<SVGGElement, WorkLog, any, any>) {
+    container
+      .selectAll('rect.dragbar-left')
+      .data((d) => [d])
+      .join<SVGRectElement>('rect')
       .call(this.setupDragBar)
       .classed('dragbar-left', true)
-      .attr('x', (d) => -(this._dragBarW / 2));
+      .attr('x', (d) => -(this._dragBarW / 2))
+      .style('visibility', (d: WorkLog) =>
+        this._x.domain()[1] < d.startTime || this._x.domain()[0] > d.startTime
+          ? 'hidden'
+          : 'visible'
+      )
+      .transition();
 
-    d3.selectAll<SVGRectElement, WorkLog>('rect.dragbar-left').call(
-      d3
-        .drag<SVGRectElement, WorkLog>()
+    selectAll<SVGRectElement, WorkLog>('rect.dragbar-left').call(
+      drag<SVGRectElement, WorkLog>()
         .container(function (d, i, groups) {
           return this!.parentElement!.parentElement!;
         })
         .filter(function () {
           return (
-            d3.mouse(this.parentElement!.parentElement!)[0] > self._x.range()[0] ||
-            d3.mouse(this.parentElement!.parentElement!)[0] < self._x.range()[1]
+            mouse(this.parentElement!.parentElement!)[0] > self._x.range()[0] ||
+            mouse(this.parentElement!.parentElement!)[0] < self._x.range()[1]
           );
         })
         .on('drag', function (d: WorkLog) {
-          const newStartTime = self._x.invert(Math.round(d3.event.x));
+          const newStartTime = self._x.invert(Math.round(event.x));
           if (newStartTime > d.endTime) return;
-          // @ts-ignore
-          const workLogGroup = d3.select<HTMLElement, WorkLog>(this.parentElement);
+
+          const workLogGroup = select<HTMLElement, WorkLog>(this.parentElement!);
           workLogGroup
             .attr(
               'transform',
@@ -112,30 +168,36 @@ export class D3Gantt {
         })
     );
 
-    this._dragBarRight = workLogGroups
-      .append('rect')
+    container
+      .selectAll('rect.dragbar-right')
+      .data((d) => [d])
+      .join<SVGRectElement>('rect')
       .call(this.setupDragBar)
       .classed('dragbar-right', true)
+      .attr('x', (d) => -(this._dragBarW / 2) + this._x(d.endTime) - this._x(d.startTime))
+      .style('visibility', (d: WorkLog) =>
+        this._x.domain()[1] < d.endTime || this._x.domain()[0] > d.endTime ? 'hidden' : 'visible'
+      )
+      .transition()
       .attr('x', (d) => -(this._dragBarW / 2) + this._x(d.endTime) - this._x(d.startTime));
 
     const self = this;
 
-    d3.selectAll<SVGRectElement, WorkLog>('rect.dragbar-right').call(
-      d3
-        .drag<SVGRectElement, WorkLog>()
+    selectAll<SVGRectElement, WorkLog>('.dragbar-right').call(
+      drag<SVGRectElement, WorkLog>()
         .container(function (d, i, groups) {
           return this.parentElement!.parentElement!;
         })
         .filter(function () {
           return (
-            d3.mouse(this.parentElement!.parentElement!)[0] > self._x.range()[0] ||
-            d3.mouse(this.parentElement!.parentElement!)[0] < self._x.range()[1]
+            mouse(this.parentElement!.parentElement!)[0] > self._x.range()[0] ||
+            mouse(this.parentElement!.parentElement!)[0] < self._x.range()[1]
           );
         })
         .on('drag', function (d: WorkLog) {
-          const newEndTime = (d.endTime = self._x.invert(Math.round(d3.event.x)));
+          const newEndTime = (d.endTime = self._x.invert(Math.round(event.x)));
           if (newEndTime < d.startTime) return;
-          const workLogGroup = d3.select(this.parentElement);
+          const workLogGroup = select(this.parentElement);
           workLogGroup
             .select('.work-log-rect')
             .attr('width', self._x(newEndTime) - self._x(d.startTime));
@@ -145,12 +207,10 @@ export class D3Gantt {
         })
     );
 
-    const menu = contextMenu().items(['item1', 'item2']);
-
-    d3.selectAll<SVGGElement, WorkLog>('.work-log-group').call(
-      d3.drag<SVGGElement, WorkLog>().on('drag', function (d: WorkLog) {
-        const width = +d3.select(this).select('.work-log-rect').attr('width'),
-          newPosX = Math.floor(d3.event.x - width / 2),
+    selectAll<SVGGElement, WorkLog>('.work-log-group').call(
+      drag<SVGGElement, WorkLog>().on('drag', function (d: WorkLog) {
+        const width = +select(this).select('.work-log-rect').attr('width'),
+          newPosX = Math.floor(event.x - width / 2),
           newStart = self._x.invert(newPosX),
           newEnd = self._x.invert(newPosX + width);
         if (newStart > self._x.domain()[0] && newEnd < self._x.domain()[1]) {
@@ -158,46 +218,13 @@ export class D3Gantt {
           d.startTime = newStart;
           d.endTime = newEnd;
           const currentPos = getTransformation(this.getAttribute('transform')!);
-          d3.select(this).attr('transform', `translate(${newPosX} ${currentPos.translateY})`);
+          select(this).attr('transform', `translate(${newPosX} ${currentPos.translateY})`);
         }
       })
     );
-
-    d3.selectAll<SVGGElement, WorkLog>('.work-log-group').on('contextmenu', function () {
-      d3.event.preventDefault();
-      const [x, y] = d3.mouse(this.parentElement!);
-      menu(x, y, this.parentElement);
-    });
-
-    svg
-      .append('g')
-      .attr('class', 'x axis')
-      .attr('transform', `translate(0 ${this._height})`)
-      .transition()
-      .call(this._xAxis);
-
-    svg.append('g').attr('class', 'y axis').transition().call(this._yAxis);
-
-    d3.select('.chart').call(
-      // @ts-ignore
-      d3
-        .zoom()
-        .filter(() => d3.event.type === 'wheel')
-        .on('zoom', () => {
-          const wheelMove = d3.event.sourceEvent.wheelDelta / 60;
-          this._timeDomainMode = 'fixed';
-          const currentStart = this._timeDomainStart;
-          const currentEnd = this._timeDomainEnd;
-          this._timeDomainStart = d3.timeHour.floor(d3.timeHour.offset(currentStart, wheelMove));
-          this._timeDomainEnd = d3.timeHour.ceil(d3.timeHour.offset(currentEnd, wheelMove));
-          this.redraw();
-        })
-    );
   }
 
-  private setupDragBar = (
-    selection: d3.Selection<SVGRectElement, WorkLog, SVGGElement, unknown>
-  ) => {
+  private setupDragBar = (selection: Selection<any, WorkLog, SVGGElement, unknown>) => {
     selection
       .attr('rx', 5)
       .attr('ry', 5)
@@ -209,14 +236,14 @@ export class D3Gantt {
       .attr('height', this._y.bandwidth());
   };
 
-  private static keyFunction = (worklog: WorkLog, index: number, groups: BaseType[]) =>
+  private static keyFunction = (worklog: WorkLog, i: number, groups: any[]) =>
     worklog.startTime + worklog.Name + worklog.endTime;
 
   private initTimeDomain() {
     if (this._timeDomainMode === D3Gantt.FIT_TIME_DOMAIN_MODE) {
       if (this.workLogs === undefined || this.workLogs.length < 1) {
-        this._timeDomainStart = d3.timeDay.offset(new Date(), -3);
-        this._timeDomainEnd = d3.timeHour.offset(new Date(), +3);
+        this._timeDomainStart = timeDay.offset(new Date(), -3);
+        this._timeDomainEnd = timeHour.offset(new Date(), +3);
         return;
       }
 
@@ -228,67 +255,44 @@ export class D3Gantt {
     }
   }
 
-  private _x!: d3.ScaleTime<number, number>;
-  private _y!: d3.ScaleBand<string>;
+  private _x = scaleTime();
+  private _y = scaleBand();
   private _xAxis!: d3.Axis<number | Date | { valueOf(): number }>;
   private _yAxis!: d3.Axis<string>;
 
-  private initAxis() {
-    this._x = d3
-      .scaleTime()
+  private initAxis(taskTypes: string[]) {
+    this._x
       .domain([this._timeDomainStart, this._timeDomainEnd])
       .range([0, this._width])
       .clamp(true);
 
-    this._y = d3.scaleBand().domain(this._taskTypes).rangeRound([0, this._height]);
+    this._y = this._y.domain(taskTypes).rangeRound([0, this._height]);
 
-    this._xAxis = d3
-      .axisBottom(this._x)
+    this._xAxis = axisBottom(this._x)
       // @ts-ignore
-      .tickFormat(d3.timeFormat(this._tickFormat))
+      .tickFormat(timeFormat(this._tickFormat))
       .tickSize(8)
       .tickPadding(8);
 
-    this._yAxis = d3.axisLeft(this._y).tickSize(0);
+    this._yAxis = axisLeft(this._y).tickSize(0);
   }
 
   public redraw(tasks: WorkLog[] = this.workLogs) {
+    const taskTypes = new Set(tasks.map((x) => x.type));
     this.initTimeDomain();
-    this.initAxis();
+    this.initAxis(Array.from(taskTypes));
 
-    const svg = d3.selectAll('svg.chart').data<WorkLog>(tasks);
-    svg.selectAll('g.work-log-group').exit().remove();
-    const workLogGroups = d3
-      .selectAll<SVGGElement, WorkLog>('g.work-log-group')
-      .transition()
-      .attr('transform', (d: WorkLog) => `translate(${this._x(d.startTime)} ${this._y(d.type)})`);
-
-    this._dragBarLeft
-      .style('visibility', (d: WorkLog) =>
-        this._x.domain()[1] < d.startTime || this._x.domain()[0] > d.startTime
-          ? 'hidden'
-          : 'visible'
-      )
-      .transition();
-
-    this._dragBarRight
-      .style('visibility', (d: WorkLog) =>
-        this._x.domain()[1] < d.endTime || this._x.domain()[0] > d.endTime ? 'hidden' : 'visible'
-      )
-      .transition()
-      .attr('x', (d) => -(this._dragBarW / 2) + this._x(d.endTime) - this._x(d.startTime));
-
-    d3.selectAll<SVGRectElement, WorkLog>('.work-log-rect')
-      .transition()
-      .attr('height', this._y.bandwidth())
-      .attr('width', (d) => this._x(d.endTime) - this._x(d.startTime));
+    const svg = select('svg.chart');
+    this.drawBars();
+    this.drawDragBars(svg.selectAll('.work-log-group'));
 
     svg.transition().attr('width', this._width + this._margin.left + this._margin.right);
     svg.transition().attr('height', this._height + this._margin.top + this._margin.bottom);
+    const container = svg.select('.gantt-chart');
     // @ts-ignore
-    svg.select('.x').transition().call(this._xAxis);
+    container.select('.x-axis').transition().call(this._xAxis);
     // @ts-ignore
-    svg.select('.y').transition().call(this._yAxis);
+    container.select('.y-axis').transition().call(this._yAxis);
 
     return this;
   }
@@ -301,7 +305,6 @@ export class D3Gantt {
 
   public margin = mkProperty<D3Gantt['_margin']>('_margin');
   public timeDomainMode = mkProperty<D3Gantt['_timeDomainMode']>('_timeDomainMode');
-  public taskTypes = mkProperty<D3Gantt['_taskTypes']>('_taskTypes');
   public taskStatus = mkProperty<D3Gantt['_taskStatus']>('_taskStatus');
   public width = mkProperty<D3Gantt['_width']>('_width');
   public height = mkProperty<D3Gantt['_height']>('_height');
