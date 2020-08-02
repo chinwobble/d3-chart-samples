@@ -5,7 +5,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const mode = 'production';
-const base = mode === 'production' ? 'https://chinwobble.github.io/d3-chart-samples' : false;
+const base = false;
 
 const miniApps = ['blocks', 'gantt'];
 
@@ -31,7 +31,7 @@ module.exports = {
   context: path.join(process.cwd(), 'src'),
 
   output: {
-    publicPath: mode === 'production' ? '/' : 'http://localhost:8080/',
+    publicPath: mode === 'production' ? '/d3-chart-samples' : 'http://localhost:8080/',
     path: path.join(process.cwd(), 'dist'),
     filename: 'scripts/[name].[hash].js',
   },
