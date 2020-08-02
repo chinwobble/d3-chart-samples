@@ -69,7 +69,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'public/index.html',
+      template: 'shared/index.html',
       scriptLoading: 'defer',
       chunks: [],
       title: 'd3 samples',

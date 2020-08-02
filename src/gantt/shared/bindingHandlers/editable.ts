@@ -18,7 +18,7 @@
 //                 }
 //             });
 //         }
-        
+
 //         //wrap calls to knockout.validation
 //         if (!editableOptions.validate && value.isValid) {
 //             editableOptions.validate = function (testValue) {
@@ -63,11 +63,11 @@
 //         if (editableOptions.visible && ko.isObservable(editableOptions.visible)) {
 //             editableOptions.toggle = 'manual';
 //         }
-        
+
 //         if (editableOptions.init) {
 //             $element.on('init.ko', editableOptions.init);
 //         }
-        
+
 //         //create editable
 //         var $editable = $element.editable(editableOptions);
 
@@ -91,7 +91,7 @@
 //                 })
 //             }
 //         }
-        
+
 //         if (editableOptions.shown) {
 //             $editable.on('shown.ko', editableOptions.shown);
 //         }
@@ -99,7 +99,7 @@
 //         if (editableOptions.save) {
 //             $editable.on('save', editableOptions.save);
 //         }
-        
+
 //         //setup observable to fire only when editable changes, not when options change
 //         //http://www.knockmeout.net/2012/06/knockoutjs-performance-gotcha-3-all-bindings.html
 //         ko.computed({

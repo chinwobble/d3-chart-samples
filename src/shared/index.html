@@ -5,11 +5,7 @@
   </head>
 
   <body>
-    <header class="header">
-      <div class="wrapper">
-        my header
-      </div>
-    </header>
+    <%= require('html-loader!./header.html') %>
     <main class="wrapper">
       <ul class="detail-list">
         <li class="detail-item">
@@ -32,7 +28,20 @@
   </body>
   <style>
     .header {
-      height: 40px;
+    }
+
+    .header-nav {
+      display: block;
+    }
+
+    .header-nav__list {
+      list-style: none;
+      display: inline;
+    }
+
+    .header-nav__list-item {
+      float: left;
+      padding: 5px;
     }
 
     .wrapper {
@@ -45,6 +54,7 @@
       list-style: none;
       display: grid;
       grid-gap: 2rem;
+      padding: 0px;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       /* background-color: black; */
     }
