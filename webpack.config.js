@@ -5,6 +5,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const mode = 'production';
+const base = mode === 'production' ? 'https://chinwobble.github.io/d3-chart-samples' : false;
 
 const miniApps = ['blocks', 'gantt'];
 
@@ -19,6 +20,7 @@ for (const miniApp of miniApps) {
       scriptLoading: 'defer',
       chunks: [miniApp],
       title: miniApp,
+      base,
     })
   );
 }
@@ -73,6 +75,7 @@ module.exports = {
       scriptLoading: 'defer',
       chunks: [],
       title: 'd3 samples',
+      base,
     }),
 
     ...generatedHTMLFiles,
