@@ -15,4 +15,8 @@
   &__list-item {
     padding: 5px;
   }
+
+  &__list-item--right {
+    margin-left: auto;
+  }
 }
