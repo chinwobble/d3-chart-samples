@@ -1,6 +1,9 @@
-git checkout -B gh-pages
-git add -f dist
+git worktree add gh-pages || true
+npm run build
+rimraf gh-pages/**/*.{js,css,html,png}
+cp -r dist/* gh-pages
+pushd gh-pages
+git add .
 git commit -am "Rebuild website" --no-verify
-git filter-branch -f --prune-empty --subdirectory-filter dist
 git push -f origin gh-pages
-git checkout -
+popd

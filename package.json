@@ -10,7 +10,7 @@
     "lint": "eslint \"**/*.ts\" -f eslint-formatter-friendly",
     "prebuild": "npm run format",
     "pretest": "npm run lint",
-    "build": "npm run clean && webpack --config ./webpack.config.js"
+    "build": "npm run clean && webpack --config ./webpack.config.js --mode=production"
   },
   "license": "ISC",
   "devDependencies": {

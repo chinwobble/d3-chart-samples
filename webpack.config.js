@@ -4,9 +4,6 @@ const CopyPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-const mode = 'production';
-const base = false;
-
 const miniApps = ['blocks', 'gantt'];
 
 const entries = {};
@@ -20,23 +17,20 @@ for (const miniApp of miniApps) {
       scriptLoading: 'defer',
       chunks: [miniApp],
       title: miniApp,
-      base,
     })
   );
 }
 
-module.exports = {
+module.exports = (env, argv) => ({
   entry: entries,
 
   context: path.join(process.cwd(), 'src'),
 
   output: {
-    publicPath: mode === 'production' ? '/d3-chart-samples' : 'http://localhost:8080/',
+    publicPath: (argv || {}).mode === 'production' ? '/d3-chart-samples' : '/',
     path: path.join(process.cwd(), 'dist'),
     filename: 'scripts/[name].[hash].js',
   },
-
-  mode,
 
   module: {
     rules: [
@@ -75,7 +69,6 @@ module.exports = {
       scriptLoading: 'defer',
       chunks: [],
       title: 'd3 samples',
-      base,
     }),
 
     ...generatedHTMLFiles,
@@ -128,4 +121,4 @@ module.exports = {
     maxEntrypointSize: 512000,
     maxAssetSize: 512000,
   },
-};
+});
