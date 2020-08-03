@@ -6,7 +6,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const miniApps = ['blocks', 'gantt'];
 
-const entries = {};
+const entries = { 'shared-styles': 'shared/shared.scss' };
 const generatedHTMLFiles = [];
 for (const miniApp of miniApps) {
   entries[miniApp] = `${miniApp}/app.ts`;
@@ -67,7 +67,7 @@ module.exports = (env, argv) => ({
       filename: 'index.html',
       template: 'shared/index.html',
       scriptLoading: 'defer',
-      chunks: [],
+      chunks: ['shared-styles'],
       title: 'd3 samples',
     }),
 

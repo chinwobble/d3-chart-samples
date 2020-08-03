@@ -1,0 +1,47 @@
+@import './header.scss';
+
+.wrapper {
+  width: 90%;
+  max-width: 1900px;
+  margin: 0 auto;
+}
+
+.detail-list {
+  list-style: none;
+  display: grid;
+  grid-gap: 2rem;
+  padding: 0px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* background-color: black; */
+}
+
+.detail-item {
+  background-color: #999999;
+  color: black;
+  border-radius: 5px;
+  padding: 20px;
+}
+
+blockquote,
+dd,
+div,
+dl,
+dt,
+form,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+ol,
+p,
+pre,
+td,
+th,
+ul,
+body {
+  padding: 0;
+  margin: 0;
+}
