@@ -9,11 +9,19 @@
     width: 100%;
     display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: flex-start;
   }
 
   &__list-item {
     padding: 5px;
+  }
+
+  &__link {
+    height: 40px;
+    line-height: 40px;
+    display: inline-block;
+    text-decoration: none;
   }
 
   &__list-item--right {

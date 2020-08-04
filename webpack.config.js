@@ -51,6 +51,10 @@ module.exports = (env, argv) => ({
         ],
       },
       {
+        test: /\.(svg|eot|woff|woff2|ttf)$/,
+        use: ['file-loader'],
+      },
+      {
         test: /\.ts$/,
         exclude: [path.resolve(__dirname, '__tests__')],
         enforce: 'post',

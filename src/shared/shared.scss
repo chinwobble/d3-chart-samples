@@ -1,4 +1,7 @@
+$fa-font-path: '../../node_modules/@fortawesome/fontawesome-free/webfonts';
 @import './header.scss';
+@import '~@fortawesome/fontawesome-free/scss/fontawesome';
+@import '~@fortawesome/fontawesome-free/scss/regular';
 
 .wrapper {
   width: 90%;
@@ -44,4 +47,8 @@ ul,
 body {
   padding: 0;
   margin: 0;
+}
+
+body {
+  font-family: Source Sans Pro, Hiragino Sans GB, Arial, sans-serif;
 }

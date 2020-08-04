@@ -25,6 +25,7 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-formatter-friendly": "^7.0.0",
     "eslint-plugin-prettier": "^3.1.4",
+    "file-loader": "^6.0.0",
     "html-loader": "^1.1.0",
     "html-webpack-plugin": "^4.3.0",
     "istanbul-instrumenter-loader": "^3.0.1",
@@ -40,6 +41,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.14.0",
     "d3": "^5.16.0"
   },
   "engines": {
