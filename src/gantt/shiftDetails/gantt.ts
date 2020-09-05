@@ -5,7 +5,7 @@ import { timeFormat } from 'd3-time-format';
 import { zoom } from 'd3-zoom';
 import { Selection, select, selectAll, mouse, event } from 'd3-selection';
 import { drag } from 'd3-drag';
-import { WorkLog } from './WorkLog';
+import { WorkLog } from './workLog';
 import { getTransformation } from '../shared/translateHelper';
 import { contextMenu } from '../shared/context-menu';
 
