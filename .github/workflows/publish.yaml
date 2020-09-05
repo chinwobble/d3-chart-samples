@@ -1,4 +1,4 @@
-name: Build Documentation
+name: Publish to gh-pages
 
 on:
   repository_dispatch:

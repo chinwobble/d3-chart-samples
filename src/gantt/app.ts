@@ -1,5 +1,5 @@
 import { D3Gantt } from './shiftDetails/gantt';
-import { WorkLog } from './shiftDetails/workLog';
+import { WorkLog } from './shiftDetails/WorkLog';
 
 const worklogs: WorkLog[] = [
   {
