@@ -17,4 +17,9 @@ jobs:
         node-version: '12.x'
     - run: npm ci
     - run: npm run build
-    - run: npm run deploy
+    - name: Publish generated content to GitHub Pages
+      uses: tsunematsu21/actions-publish-gh-pages@v1.0.1
+      with:
+        dir: dist
+        branch: gh-pages
+        token: ${{ secrets.ACCESS_TOKEN }}
